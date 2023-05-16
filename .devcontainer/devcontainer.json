@@ -10,20 +10,36 @@
 		"GIT_EDITOR=code --wait",
 		"--privileged"
 	],
-	"settings": { 
-		"terminal.integrated.shell.linux": "/bin/bash"
-	},
-	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/test_hassio/addons/local/myaddon,type=bind,consistency=delegated",
-	"workspaceFolder": "/workspaces/test_hassio/addons/local/myaddon",
+	"workspaceMount": "source=${localWorkspaceFolder}\\custom_components,target=/workspaces/test_hassio/homeassistant/custom_components,type=bind,consistency=delegated",
+	"workspaceFolder": "/workspaces/test_hassio/homeassistant",
 	"mounts": [
 		// Cache docker images between devcontainer rebuilds (and share between devcontainers)
 		"source=vsc-hassio-docker,target=/var/lib/docker,type=volume"
-	]
+	],
 
 	// Post-create command to initialize the workspace.  For example, for a node.js add-on you may want:
 	// "postCreateCommand": "cd /workspaces/test_hassio/addons/local/myaddon && npm install",
-	// "extensions": [
-	//	"dbaeumer.vscode-eslint",
-	// 	"maty.vscode-mocha-sidebar"
-	// ]
+	"extensions": [
+		"ms-python.python",
+	    "visualstudioexptteam.vscodeintellicode",
+    	"ms-azure-devops.azure-pipelines"
+	],
+	"settings": {
+		"python.pythonPath": "/usr/bin/python3.7",
+		"python.linting.pylintEnabled": true,
+		"python.linting.enabled": true,
+		"python.formatting.provider": "black",
+		"editor.formatOnPaste": false,
+		"editor.formatOnSave": true,
+		"editor.formatOnType": true,
+		"files.trimTrailingWhitespace": true,
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"yaml.customTags": [
+		  "!secret scalar",
+		  "!include_dir_named scalar",
+		  "!include_dir_list scalar",
+		  "!include_dir_merge_list scalar",
+		  "!include_dir_merge_named scalar"
+		]
+	  }
 }
