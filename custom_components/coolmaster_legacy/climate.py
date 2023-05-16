@@ -1,6 +1,5 @@
 """coolmaster_legacy platform to control of CoolMaster Climate Devices."""
 
-import asyncio
 import logging
 
 from pycoolmaster import CoolMaster
@@ -42,25 +41,23 @@ SWING_MODES = ["auto", "horizontal", "30", "45", "60", "vertical"]
 
 _LOGGER = logging.getLogger(__name__)
 
-slock = asyncio.Lock()
-
 
 async def async_setup_entry(hass, config_entry, async_add_devices):
     """Set up the CoolMaster climate platform."""
     port = config_entry.data[CONF_SERIAL_PORT]
     baud = config_entry.data[CONF_BAUDRATE]
     cool = CoolMaster(port, baud)
-    async with slock:
-        devices = await hass.async_add_executor_job(cool.devices)
-        all_devices = [CoolmasterClimate(device, hass, slock) for device in devices]
-        async_add_devices(all_devices, True)
+    devices = await hass.async_add_executor_job(cool.devices)
 
+    all_devices = [CoolmasterClimate(device) for device in devices]
+
+    async_add_devices(all_devices, True)
 
 
 class CoolmasterClimate(ClimateEntity):
     """Representation of a coolmaster_legacy climate device."""
 
-    def __init__(self, hass, slock, device):
+    def __init__(self, device):
         """Initialize the climate device."""
         self._device = device
         self._uid = device.uid
@@ -73,31 +70,28 @@ class CoolmasterClimate(ClimateEntity):
         self._swing = None
         self._on = None
         self._unit = None
-        self._slock = slock
-        self._hass = hass
         _LOGGER.debug("Initialized device %s", device.uid)
 
-    async def async_update(self):
+    def update(self):
         """Pull state from CoolMaster."""
-        async with self._slock:
-            status = await self._hass.async_add_executor_job(self._device.status)
-            self._target_temperature = status["thermostat"]
-            self._current_temperature = status["temperature"]
-            self._current_fan_mode = status["fan_speed"]
-            self._on = status["is_on"]
+        status = self._device.status
+        self._target_temperature = status["thermostat"]
+        self._current_temperature = status["temperature"]
+        self._current_fan_mode = status["fan_speed"]
+        self._on = status["is_on"]
 
-            device_mode = status["mode"]
-            if self._on:
-                self._hvac_mode = CM_TO_HA_STATE[device_mode]
-            else:
-                self._hvac_mode = HVAC_MODE_OFF
+        device_mode = status["mode"]
+        if self._on:
+            self._hvac_mode = CM_TO_HA_STATE[device_mode]
+        else:
+            self._hvac_mode = HVAC_MODE_OFF
 
-            if status["unit"] == "celsius":
-                self._unit = TEMP_CELSIUS
-            else:
-                self._unit = TEMP_FAHRENHEIT
+        if status["unit"] == "celsius":
+            self._unit = TEMP_CELSIUS
+        else:
+            self._unit = TEMP_FAHRENHEIT
 
-            self._swing = status["swing"]
+        self._swing = status["swing"]
 
     @property
     def device_info(self):
@@ -169,49 +163,39 @@ class CoolmasterClimate(ClimateEntity):
         """Return the temperature precision."""
         return PRECISION_WHOLE
 
-    async def async_set_temperature(self, **kwargs):
+    def set_temperature(self, **kwargs):
         """Set new target temperatures."""
         temp = kwargs.get(ATTR_TEMPERATURE)
         if temp is not None:
             _LOGGER.debug("Setting temp of %s to %s", self.unique_id, str(round(temp)))
-            async with self._slock:
-                self._hass.async_add_executor_job(
-                    self._device.set_thermostat, str(round(temp))
-                )
+            self._device.set_thermostat(str(round(temp)))
 
-    async def async_set_fan_mode(self, fan_mode):
+    def set_fan_mode(self, fan_mode):
         """Set new fan mode."""
         _LOGGER.debug("Setting fan mode of %s to %s", self.unique_id, fan_mode)
-        async with self._slock:
-            self._hass.async_add_executor_job(self._device.set_fan_speed, fan_mode)
+        self._device.set_fan_speed(fan_mode)
 
-    async def async_set_swing_mode(self, swing_mode):
+    def set_swing_mode(self, swing_mode):
         """Set new swing mode."""
         _LOGGER.debug("Setting swing mode of %s to %s", self.unique_id, swing_mode)
-        async with self._slock:
-            self._hass.async_add_executor_job(self._device.set_swing, swing_mode)
+        self._device.set_swing(swing_mode)
 
-    async def async_set_hvac_mode(self, hvac_mode):
+    def set_hvac_mode(self, hvac_mode):
         """Set new operation mode."""
         _LOGGER.debug("Setting operation mode of %s to %s", self.unique_id, hvac_mode)
 
         if hvac_mode == HVAC_MODE_OFF:
             self.turn_off()
         else:
-            async with self._slock:
-                await self._hass.async_add_executor_job(
-                    self._device.set_mode, HA_STATE_TO_CM[hvac_mode]
-                )
+            self._device.set_mode(HA_STATE_TO_CM[hvac_mode])
             self.turn_on()
 
-    async def async_turn_on(self):
+    def turn_on(self):
         """Turn on."""
         _LOGGER.debug("Turning %s on", self.unique_id)
-        async with self._slock:
-            self._hass.async_add_executor_job(self._device.turn_on)
+        self._device.turn_on()
 
-    async def async_turn_off(self):
+    def turn_off(self):
         """Turn off."""
         _LOGGER.debug("Turning %s off", self.unique_id)
-        async with self._slock:
-            self._hass.async_add_executor_job(self._device.turn_off)
+        self._device.turn_off()
