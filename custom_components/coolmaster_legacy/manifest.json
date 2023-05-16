@@ -6,5 +6,7 @@
   "requirements": ["pycoolmaster==0.2.1"],
   "dependencies": [],
   "codeowners": ["@issacg"],
-  "homeassistant": "0.104.0"
+  "homeassistant": "0.104.0",
+  "version": "1.0.0",
+  "integration_type": "hub"
 }
