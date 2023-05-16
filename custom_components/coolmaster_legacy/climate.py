@@ -5,7 +5,7 @@ import logging
 
 from pycoolmaster import CoolMaster
 
-from homeassistant.components.climate import ClimateDevice
+from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     HVAC_MODE_COOL,
     HVAC_MODE_DRY,
@@ -56,7 +56,8 @@ async def async_setup_entry(hass, config_entry, async_add_devices):
         async_add_devices(all_devices, True)
 
 
-class CoolmasterClimate(ClimateDevice):
+
+class CoolmasterClimate(ClimateEntity):
     """Representation of a coolmaster_legacy climate device."""
 
     def __init__(self, hass, slock, device):
